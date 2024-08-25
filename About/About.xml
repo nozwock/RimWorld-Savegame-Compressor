@@ -7,7 +7,7 @@
   <packageId>Revolus.Compressor</packageId>
   
   <supportedVersions>
-    <li>1.1</li>
+    <li>1.5</li>
   </supportedVersions>
   
   <modDependencies>

@@ -62,7 +62,7 @@ namespace Revolus.Compressor {
                 typeof(string)
             );
             Patch(
-                typeof(DataExposeUtility), "ByteArray",
+                typeof(DataExposeUtility), "LookByteArray",
                 nameof(DataExposeUtility__ByteArray__Prefix), null,
                 (Type[]) null
             );
