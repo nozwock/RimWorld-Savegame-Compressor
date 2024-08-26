@@ -70,7 +70,7 @@ namespace Revolus.Compressor {
 
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(left, "Compress All Saves")) {
-                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure?", delegate () {
+                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", delegate () {
                         var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
                         var count = 0;
                         foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
@@ -91,7 +91,7 @@ namespace Revolus.Compressor {
 
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(right, "Decompress All Saves")) {
-                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure?", delegate () {
+                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", delegate () {
                         var count = 0;
                         foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
                             if (Utils.IsGzipped(file.FullName)) {
