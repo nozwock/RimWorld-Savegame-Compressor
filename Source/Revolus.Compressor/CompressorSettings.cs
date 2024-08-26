@@ -1,4 +1,7 @@
 ﻿using System;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -53,7 +56,59 @@ namespace Revolus.Compressor {
 
                 Text.Anchor = TextAnchor.MiddleLeft;
                 prettyNew = prettyOld;
-                Widgets.CheckboxLabeled(valueRect, "", ref prettyNew, placeCheckboxNearText:true);
+                Widgets.CheckboxLabeled(valueRect, "", ref prettyNew, placeCheckboxNearText: true);
+
+                listing.Gap(listing.verticalSpacing + Text.LineHeight);
+            }
+
+            {
+                Rect wholeRect = listing.GetRect(Text.LineHeight * 2);
+                Rect left = wholeRect.LeftHalf().Rounded();
+                left.width -= 10;
+                Rect right = wholeRect.RightHalf().Rounded();
+                right.width -= 10;
+
+                Text.Anchor = TextAnchor.MiddleCenter;
+                if (Widgets.ButtonText(left, "Compress All Saves")) {
+                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure?", delegate () {
+                        var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
+                        var count = 0;
+                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                            if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
+                                count++;
+                                Log.Message($"Compressing {file.Name}");
+                                var data = File.ReadAllBytes(file.FullName);
+                                using (var fileStream = File.Create(file.FullName))
+                                using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
+                                    gzipStream.Write(data, 0, data.Length);
+                                }
+                            }
+                        };
+
+                        Find.WindowStack.Add(new Dialog_MessageBox($"Compressed {count} saves."));
+                    }));
+                };
+
+                Text.Anchor = TextAnchor.MiddleCenter;
+                if (Widgets.ButtonText(right, "Decompress All Saves")) {
+                    Find.WindowStack.Add(new Dialog_Confirm("Are you sure?", delegate () {
+                        var count = 0;
+                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                            if (Utils.IsGzipped(file.FullName)) {
+                                count++;
+                                Log.Message($"Decompressing {file.Name}");
+                                var data = File.ReadAllBytes(file.FullName);
+                                using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress)) {
+                                    using (var fileStream = File.Create(file.FullName)) {
+                                        gzipStream.CopyTo(fileStream);
+                                    };
+                                }
+                            }
+                        };
+
+                        Find.WindowStack.Add(new Dialog_MessageBox($"Decompressed {count} saves."));
+                    }));
+                }
 
                 listing.Gap(listing.verticalSpacing + Text.LineHeight);
             }

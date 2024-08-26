@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using System.Xml;
 
@@ -52,6 +53,21 @@ namespace Revolus.Compressor {
             var val = type.GetProperty(name, flags);
             info = val;
             return !(val is null);
+        }
+
+        public static bool IsGzipped(string filePath) {
+            var gzipMagicNumber = new byte[] { 0x1F, 0x8B }; // for GZip version 4.3 and later
+
+            using (FileStream fileStream = File.OpenRead(filePath)) {
+                var fileHeader = new byte[2];
+                fileStream.Read(fileHeader, 0, fileHeader.Length);
+
+                if (fileHeader.SequenceEqual(gzipMagicNumber)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
         }
     }
 }
