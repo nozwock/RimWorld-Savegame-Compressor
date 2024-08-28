@@ -5,6 +5,8 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
+using CompressionLevel = System.IO.Compression.CompressionLevel;
+
 namespace Revolus.Compressor {
     internal class CompressorSettings : ModSettings {
         internal static readonly bool prettyDefault = false;
@@ -98,11 +100,10 @@ namespace Revolus.Compressor {
                                 count++;
                                 Log.Message($"Decompressing {file.Name}");
                                 var data = File.ReadAllBytes(file.FullName);
-                                using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress)) {
-                                    using (var fileStream = File.Create(file.FullName)) {
-                                        gzipStream.CopyTo(fileStream);
-                                    };
-                                }
+                                using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
+                                using (var fileStream = File.Create(file.FullName)) {
+                                    gzipStream.CopyTo(fileStream);
+                                };
                             }
                         };
 
