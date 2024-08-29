@@ -20,6 +20,9 @@ namespace Revolus.Compressor {
         public override void DoSettingsWindowContents(Rect rect) {
             bool changed;
 
+            var split = 0.75f;
+            rect = rect.LeftPart(split / 2f + 0.5f).RightPart(split / (split / 2f + 0.5f));
+
             var listing = new Listing_Standard();
             listing.Begin(rect);
             try {

@@ -73,41 +73,45 @@ namespace Revolus.Compressor {
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(left, "Compress All Saves")) {
                     Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", delegate () {
-                        var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
-                        var count = 0;
-                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
-                            if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
-                                count++;
-                                Log.Message($"Compressing {file.Name}");
-                                var data = File.ReadAllBytes(file.FullName);
-                                using (var fileStream = File.Create(file.FullName))
-                                using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
-                                    gzipStream.Write(data, 0, data.Length);
+                        Find.WindowStack.Add(new Dialog_Progress("Compressing...", delegate () {
+                            var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
+                            var count = 0;
+                            foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                                if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
+                                    count++;
+                                    Log.Message($"Compressing {file.Name}");
+                                    var data = File.ReadAllBytes(file.FullName);
+                                    using (var fileStream = File.Create(file.FullName))
+                                    using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
+                                        gzipStream.Write(data, 0, data.Length);
+                                    }
                                 }
-                            }
-                        };
+                            };
 
-                        Find.WindowStack.Add(new Dialog_MessageBox($"Compressed {count} saves."));
+                            Find.WindowStack.Add(new Dialog_MessageBox($"Compressed {count} saves."));
+                        }));
                     }));
                 };
 
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(right, "Decompress All Saves")) {
                     Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", delegate () {
-                        var count = 0;
-                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
-                            if (Utils.IsGzipped(file.FullName)) {
-                                count++;
-                                Log.Message($"Decompressing {file.Name}");
-                                var data = File.ReadAllBytes(file.FullName);
-                                using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
-                                using (var fileStream = File.Create(file.FullName)) {
-                                    gzipStream.CopyTo(fileStream);
-                                };
-                            }
-                        };
+                        Find.WindowStack.Add(new Dialog_Progress("Decompressing...", delegate () {
+                            var count = 0;
+                            foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                                if (Utils.IsGzipped(file.FullName)) {
+                                    count++;
+                                    Log.Message($"Decompressing {file.Name}");
+                                    var data = File.ReadAllBytes(file.FullName);
+                                    using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
+                                    using (var fileStream = File.Create(file.FullName)) {
+                                        gzipStream.CopyTo(fileStream);
+                                    };
+                                }
+                            };
 
-                        Find.WindowStack.Add(new Dialog_MessageBox($"Decompressed {count} saves."));
+                            Find.WindowStack.Add(new Dialog_MessageBox($"Decompressed {count} saves."));
+                        }));
                     }));
                 }
 
@@ -123,6 +127,7 @@ namespace Revolus.Compressor {
                 this.level = levelNew;
                 changed = true;
             }
+
             return changed;
         }
     }
