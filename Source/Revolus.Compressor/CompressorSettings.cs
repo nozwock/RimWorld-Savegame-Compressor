@@ -70,13 +70,17 @@ namespace Revolus.Compressor {
                         var count = 0;
                         foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
                             if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
-                                count++;
                                 Log.Message($"Compressing {file.Name}");
+                                var lastWriteTime = file.LastWriteTime;
                                 var data = File.ReadAllBytes(file.FullName);
                                 using (var fileStream = File.Create(file.FullName))
                                 using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
                                     gzipStream.Write(data, 0, data.Length);
                                 }
+
+                                File.SetLastWriteTime(file.FullName, lastWriteTime);
+
+                                count++;
                             }
                         };
 
@@ -95,13 +99,17 @@ namespace Revolus.Compressor {
                         var count = 0;
                         foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
                             if (Utils.IsGzipped(file.FullName)) {
-                                count++;
                                 Log.Message($"Decompressing {file.Name}");
+                                var lastWriteTime = file.LastWriteTime;
                                 var data = File.ReadAllBytes(file.FullName);
                                 using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
                                 using (var fileStream = File.Create(file.FullName)) {
                                     gzipStream.CopyTo(fileStream);
                                 };
+
+                                File.SetLastWriteTime(file.FullName, lastWriteTime);
+
+                                count++;
                             }
                         };
 
