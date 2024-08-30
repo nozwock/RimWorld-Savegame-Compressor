@@ -4,6 +4,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
+using UnityEngine;
+using Verse;
 
 namespace Revolus.Compressor {
     internal class Utils {
@@ -68,6 +70,13 @@ namespace Revolus.Compressor {
                     return false;
                 }
             }
+        }
+
+        public static Rect ClampHorizontally(Rect rect, float portion = .5f) {
+            return rect.LeftPart(portion / 2f + 0.5f).RightPart(portion / (portion / 2f + 0.5f));
+        }
+        public static Rect ClampVertically(Rect rect, float portion = .5f) {
+            return rect.TopPart(portion / 2f + 0.5f).BottomPart(portion / (portion / 2f + 0.5f));
         }
     }
 }
