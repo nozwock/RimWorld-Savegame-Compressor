@@ -8,7 +8,7 @@ namespace Revolus.Compressor {
     public class Dialog_Progress : Window {
         public string title;
 
-        private Action beforeClose;
+        private readonly Action<Dialog_Progress> afterDraw;
 
         public override Vector2 InitialSize {
             get {
@@ -16,28 +16,31 @@ namespace Revolus.Compressor {
             }
         }
 
-        public Dialog_Progress(string title, Action beforeClose) {
+        public Dialog_Progress(string title, Action<Dialog_Progress> afterDraw) {
             this.forcePause = true;
             this.doCloseX = false;
             this.absorbInputAroundWindow = true;
             this.closeOnAccept = false;
             this.closeOnClickedOutside = false;
+            this.closeOnCancel = false;
 
             this.title = title;
-            this.beforeClose = beforeClose;
+            this.afterDraw = afterDraw;
         }
 
         public override void DoWindowContents(Rect inRect) {
             var listing = new Listing_Standard();
             listing.Begin(inRect);
             try {
-                listing.Label($"{this.title}");
-                this.beforeClose();
+                Text.Anchor = TextAnchor.MiddleCenter;
+                var rect = listing.GetRect(Text.LineHeight);
+                rect.y += Text.LineHeight;
+                Widgets.Label(rect, $"{this.title}");
             } finally {
                 listing.End();
             }
 
-            Find.WindowStack.TryRemove(this, true);
+            this.afterDraw(this);
         }
     }
 }

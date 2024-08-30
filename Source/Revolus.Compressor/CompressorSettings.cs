@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
+using System.Threading;
 using UnityEngine;
 using Verse;
 
@@ -66,25 +67,45 @@ namespace Revolus.Compressor {
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(wholeRect, "Compress All Saves")) {
                     Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", () => {
-                        var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
-                        var count = 0;
-                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
-                            if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
-                                Log.Message($"Compressing {file.Name}");
-                                var lastWriteTime = file.LastWriteTime;
-                                var data = File.ReadAllBytes(file.FullName);
-                                using (var fileStream = File.Create(file.FullName))
-                                using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
-                                    gzipStream.Write(data, 0, data.Length);
+                        var queue = new ConcurrentQueue<(int, int)>();
+                        var thread = new Thread(new ThreadStart(() => {
+                            var level = CompressorMod.Settings.level > 0 ? CompressionLevel.Optimal : CompressionLevel.Fastest;
+                            var count = 0;
+                            foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                                if (!Utils.IsGzipped(file.FullName) && CompressorMod.Settings.level >= 0) {
+                                    Log.Message($"Compressing {file.Name}");
+                                    var lastWriteTime = file.LastWriteTime;
+                                    var data = File.ReadAllBytes(file.FullName);
+                                    using (var fileStream = File.Create(file.FullName))
+                                    using (var gzipStream = new GZipStream(fileStream, level, leaveOpen: false)) {
+                                        gzipStream.Write(data, 0, data.Length);
+                                    }
+
+                                    File.SetLastWriteTime(file.FullName, lastWriteTime);
+
+                                    count++;
+                                    queue.Enqueue((0, count));
                                 }
+                            };
 
-                                File.SetLastWriteTime(file.FullName, lastWriteTime);
+                            queue.Enqueue((1, count));
+                        }));
+                        thread.Start();
 
-                                count++;
+                        Find.WindowStack.Add(new Dialog_Progress("Saves processed: 0", (dialog) => {
+                            if (queue.TryDequeue(out var item)) {
+                                var (type, value) = item;
+                                switch (type) {
+                                    case 0:
+                                        dialog.title = $"Saves processed: {value}";
+                                        break;
+                                    case 1:
+                                        Find.WindowStack.TryRemove(dialog, true);
+                                        Find.WindowStack.Add(new Dialog_MessageBox($"Compressed {value} saves."));
+                                        break;
+                                }
                             }
-                        };
-
-                        Find.WindowStack.Add(new Dialog_MessageBox($"Compressed {count} saves."));
+                        }));
                     }));
                 };
 
@@ -96,24 +117,44 @@ namespace Revolus.Compressor {
                 Text.Anchor = TextAnchor.MiddleCenter;
                 if (Widgets.ButtonText(wholeRect, "Decompress All Saves")) {
                     Find.WindowStack.Add(new Dialog_Confirm("Are you sure? This may take a while.", () => {
-                        var count = 0;
-                        foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
-                            if (Utils.IsGzipped(file.FullName)) {
-                                Log.Message($"Decompressing {file.Name}");
-                                var lastWriteTime = file.LastWriteTime;
-                                var data = File.ReadAllBytes(file.FullName);
-                                using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
-                                using (var fileStream = File.Create(file.FullName)) {
-                                    gzipStream.CopyTo(fileStream);
-                                };
+                        var queue = new ConcurrentQueue<(int, int)>();
+                        var thread = new Thread(new ThreadStart(() => {
+                            var count = 0;
+                            foreach (FileInfo file in GenFilePaths.AllSavedGameFiles) {
+                                if (Utils.IsGzipped(file.FullName)) {
+                                    Log.Message($"Decompressing {file.Name}");
+                                    var lastWriteTime = file.LastWriteTime;
+                                    var data = File.ReadAllBytes(file.FullName);
+                                    using (var gzipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
+                                    using (var fileStream = File.Create(file.FullName)) {
+                                        gzipStream.CopyTo(fileStream);
+                                    };
 
-                                File.SetLastWriteTime(file.FullName, lastWriteTime);
+                                    File.SetLastWriteTime(file.FullName, lastWriteTime);
 
-                                count++;
+                                    count++;
+                                    queue.Enqueue((0, count));
+                                }
+                            };
+
+                            queue.Enqueue((1, count));
+                        }));
+                        thread.Start();
+
+                        Find.WindowStack.Add(new Dialog_Progress("Saves processed: 0", (dialog) => {
+                            if (queue.TryDequeue(out var item)) {
+                                var (type, value) = item;
+                                switch (type) {
+                                    case 0:
+                                        dialog.title = $"Saves processed: {value}";
+                                        break;
+                                    case 1:
+                                        Find.WindowStack.TryRemove(dialog, true);
+                                        Find.WindowStack.Add(new Dialog_MessageBox($"Decompressed {value} saves."));
+                                        break;
+                                }
                             }
-                        };
-
-                        Find.WindowStack.Add(new Dialog_MessageBox($"Decompressed {count} saves."));
+                        }));
                     }));
                 }
             }
